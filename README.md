@@ -120,25 +120,24 @@
 
 ## 📄 7. 요구사항 명세서
 
-[요구사항 명세서 링크](https://docs.google.com/spreadsheets/d/1Dzsq76gKhSPuUmJWd8vvfGTF1MSGJRGIXNhX9SVIqMY/edit?gid=1378379683#gid=1378379683)
+[📑 요구사항 명세서 확인하기](https://docs.google.com/spreadsheets/d/1Dzsq76gKhSPuUmJWd8vvfGTF1MSGJRGIXNhX9SVIqMY/edit?gid=1378379683#gid=1378379683)
 
 ---
 
 ## 🗺️ 8. 유스케이스
-유스케이스 다이어그램 또는 주요 유스케이스 목록을 여기에 넣어주세요.
-### 8-1. 유스케이스 다이어그램
-<!-- 유스케이스 다이어그램 이미지 삽입 (예: img/usecase.png) -->
+
 <div align="center">
-<img src="./img/usecase.png" alt="유스케이스 다이어그램" width="700" />
+<img src="./img/cinefive_usecase.png" alt="유스케이스 다이어그램" width="700" />
 </div>
 
-[유스케이스 다이어그램 링크](https://drive.google.com/file/d/1kIo6SOqdB-oSVYlT01-yCAPYiYR3gZuV/view?usp=drive_link)
+유스케이스 다이어그램은 아래 링크에서 확인할 수 있습니다:  
+[📂 유스케이스 다이어그램 확인하기](https://drive.google.com/file/d/1kIo6SOqdB-oSVYlT01-yCAPYiYR3gZuV/view?usp=drive_link)
 
 ---
 
 ## 🗃️ 9. ERD 모델링 (ERD Modeling)
 <div align="center">
-<img src="./img/physical_model.png" alt="ER 모델링 다이어그램" width="700" />
+<img src="./img/cinefive_ERD.png" alt="ER 모델링 다이어그램" width="700" />
 </div>
 
 ---
