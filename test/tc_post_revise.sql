@@ -33,7 +33,10 @@ SET POST_CONT = '사용자 B가 무단으로 수정을 시도한 내용입니다
 WHERE POST_CD = 500  -- 게시글 X
   AND USER_CD = 200; -- 요청자 B의 ID (이 조건 때문에 업데이트는 0행에 영향을 줌)
 
-SELECT * FROM TBL_POSTS;
+SELECT P.POST_CD, U.USER_NICK_NM, P.POST_TT, P.POST_CTGRY_CD, P.POST_REG_DTTM, P.POST_VIEW_CNT,
+        (P.POST_LIKE_CNT - P.POST_DISLIKE_CNT) AS 'Like'
+FROM TBL_POSTS P
+INNER JOIN TBL_USERS U ON (P.USER_CD = U.USER_CD);
 
 /*
 사용자 $\text{A}$가 본인이 작성한 게시글 $\text{X}$에 접근하여 수정 시도.
@@ -43,6 +46,25 @@ SET POST_CONT = '사용자 A가 수정을 시도하여 변경된 내용입니다
     POST_MOD_DTTM = NOW()
 WHERE POST_CD = 500  -- 게시글 X
   AND USER_CD = 100; -- 요청자 A의 ID
+
+-- 변경 내용 확인
+-- 1. 게시글 상세 정보 (1건)
+SELECT
+    P.POST_CD,
+    U.USER_NICK_NM,
+    P.POST_TT,
+    P.POST_CONT,         -- 게시글 내용을 출력하기 위해 추가
+    P.POST_REG_DTTM,
+    P.POST_VIEW_CNT,
+    (P.POST_LIKE_CNT - P.POST_DISLIKE_CNT) AS `NetLike`
+FROM
+    TBL_POSTS P
+INNER JOIN
+    TBL_USERS U
+    ON P.USER_CD = U.USER_CD
+WHERE
+    P.POST_CD = 500;
+
 
 SELECT * FROM TBL_POST_CATEGORIES;
 
