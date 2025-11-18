@@ -83,26 +83,40 @@ VALUES
 */
 
 (
-    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 포함)
+    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 및 닉네임 포함)
     SELECT
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD = 4
     ORDER BY A.POST_REG_DTTM DESC
     LIMIT 2
 )
 UNION ALL
 (
-    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 포함)
+    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 및 닉네임 포함)
     SELECT
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD != 4
     ORDER BY A.POST_REG_DTTM DESC
     LIMIT 7
@@ -114,26 +128,40 @@ UNION ALL
 */
 
 (
-    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 포함)
-    SELECT -- TBL_POSTS의 모든 컬럼
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'-- TBL_POST_CATEGORIES의 카테고리명
+    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 및 닉네임 포함)
+    SELECT
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD = 4
     ORDER BY A.POST_REG_DTTM DESC
     LIMIT 2
 )
 UNION ALL
 (
-    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 포함)
+    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 및 닉네임 포함)
     SELECT
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD != 4
     ORDER BY A.POST_VIEW_CNT DESC
     LIMIT 7
@@ -146,28 +174,42 @@ UNION ALL
 */
 
 (
-    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 포함)
+    -- 1. POST_CTGRY_CD = 4 인 행 중 최신순 2개 출력 (카테고리명 및 닉네임 포함)
     SELECT
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD = 4
     ORDER BY A.POST_REG_DTTM DESC
     LIMIT 2
 )
 UNION ALL
 (
-    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 포함)
+    -- 2. POST_CTGRY_CD != 4 인 행 중 최신순 7개 출력 (카테고리명 및 닉네임 포함)
     SELECT
-        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, A.USER_CD, A.POST_REG_DTTM, A.POST_VIEW_CNT,
-        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS 'Like'
+        A.POST_CD,
+        B.POST_CTGRY_NM,
+        A.POST_TT,
+        U.USER_NICK_NM,  -- USER_CD 대신 닉네임 출력
+        A.POST_REG_DTTM,
+        A.POST_VIEW_CNT,
+        (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike` -- 별칭을 `NetLike`로 개선
     FROM TBL_POSTS A
     INNER JOIN TBL_POST_CATEGORIES B
         ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U  -- TBL_USERS 테이블 조인 추가
+        ON A.USER_CD = U.USER_CD
     WHERE A.POST_CTGRY_CD != 4
-    ORDER BY (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) DESC
+    ORDER BY (POST_LIKE_CNT - POST_DISLIKE_CNT) DESC
     LIMIT 7
 );
 
