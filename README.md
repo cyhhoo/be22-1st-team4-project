@@ -136,9 +136,9 @@
 
 ---
 
-## 🗃️ 9. 데이터 모델링 (Data Modeling)
+## 🗃️ 9. ERD 모델링 (ERD Modeling)
 <div align="center">
-<img src="./img/physical_model.png" alt="물리 모델링 다이어그램" width="700" />
+<img src="./img/physical_model.png" alt="ER 모델링 다이어그램" width="700" />
 </div>
 
 ---
