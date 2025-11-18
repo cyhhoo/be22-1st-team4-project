@@ -1028,7 +1028,914 @@ SET foreign_key_checks = 1;
 ---
 
 ## ✅ 11. 테스트 케이스 (Test Cases)
-주요 기능에 대한 테스트 케이스를 명시합니다.
+# **📑 [PCJ] USER 테이블 테스트 케이스**
+
+---
+
+<aside>
+
+**🎯 테스트 목적 (Objective)**
+
+모든 필수 입력 필드에 유효한 데이터를 입력했을 때, **데이터베이스**에 사용자 정보가 **성공적으로 등록**되고, 애플리케이션에서 **정상적인 회원가입 처리**가 완료되는지 확인한다.
+
+****🤏🏻 **사전 조건 (Preconditions)** 
+
+  1. 테스트에 사용될 ID (`test1`)은 **DB에 존재하지 않아야** 합니다 (중복성 조건 회피).
+  2. 테스트 환경 (DB, 애플리케이션 서버)이 가동 중이어야 합니다.
+
+**🚀 실행 단계 (Test Steps)**
+
+  1. test1 사용자 정보로 INSERT문을 수행합니다.
+
+1. SELECT 문으로 해당 유저가 테이블에 존재하는지 확인합니다.
+
+## **테스트 케이스 상세**
+
+---
+
+### 🔷 pcj**-001 — 회원 생성**
+
+**목적**
+
+모든 필수 입력 필드에 유효한 데이터를 입력했을 때, **데이터베이스**에 사용자 정보가 **성공적으로 등록**되고, 애플리케이션에서 **정상적인 회원가입 처리**가 완료되는지 확인한다..
+
+**SQL**
+
+```sql
+INSERT INTO TBL_USERS (
+    `USER_ID`,
+	`USER_PW`,
+	`USER_NICK_NM`,
+	`USER_EMAIL`,
+    `USER_NM`,
+	`USER_TEL`,
+	`USER_BIRTH_DT`,
+	`USER_SEX_GB`,
+	`USER_JUSO`,
+	`USER_JUSO_D`
+)
+VALUES (
+    'test1', -- 회원 아이디 (중복 불가 조건이 없다면 임의 값 사용)
+    'test1', -- 비밀번호 (실제 환경에서는 해시된 값, 테스트에서는 임의의 해시 문자열)
+    '김길동', -- 닉네임 (중복 불가 조건이 있다면 임의 값 사용)
+    'test1@test.com', -- 이메일 (사전 조건: 중복되지 않은 이메일)
+    '홍길동', -- 실명
+    '010-1234-1234', -- 전화번호
+    '2000-09-20', -- 생년월일
+    'M', -- 성별 구분 (M 또는 F)
+    '서울시 강남구', -- 주소
+    '역삼동 123-45' -- 상세주소
+);
+```
+
+**기대 결과**
+
+- 1. 웹 화면에 **"회원가입이 완료되었습니다."** 등의 성공 메시지가 표시됩니다.
+- 2. DB `TBL_USERS` 테이블에 위 $INSERT$ 쿼리의 데이터가 **정상적으로 1건 추가**되었음을 확인합니다.
+
+---
+
+![image.png](attachment:174dcc9d-962f-4dd3-aff5-e62281e63122:image.png)
+
+---
+
+### 🔷 **PCJ-002 — 대량 사용자 데이터 생성 (100명)**
+
+🎯 **테스트 목적 (Objective)**
+
+대량의 랜덤하고 고유한 사용자 데이터 100건을 $TBL\_USERS$ 테이블에 성공적으로 삽입하여, 향후 성능 및 기능 테스트를 위한 기초 환경을 구축하고 데이터베이스의 안정성을 검증한다.
+
+🤏🏻 **사전 조건 (Preconditions)**
+
+1. 테스트할 $DB$ (데이터베이스)와 $TBL\_USERS$ 테이블이 존재해야 합니다.
+2. 프로시저 실행에 필요한 $DB$ 권한 (CREATE, DROP, INSERT 권한)이 있어야 합니다.
+
+🚀 **실행 단계 (Test Steps)**
+
+1. 제공된 `DELIMITER` 설정과 함께 `GenerateTestUsers` 프로시저 정의 $SQL$을 실행하여 프로시저를 **생성**합니다.
+2. 생성된 프로시저를 **호출**합니다: `CALL GenerateTestUsers();`
+3. 데이터 삽입 결과를 **확인**합니다: `SELECT * FROM TBL_USERS WHERE USER_ID LIKE '%testuser%'`  
+
+✅ **기대 결과 (Expected Result)**
+
+1. 프로시저 실행 시 **에러가 발생하지 않아야** 합니다.
+2. `TBL_USERS` 테이블에 **새로운 행 100건**이 성공적으로 추가되어야 합니다.
+3. $USER\_ID$는 `testuser001`부터 `testuser100`까지 순차적으로 생성되고, $USER\_EMAIL$ 등의 필드 값은 **고유**하고 **유효한 형식**으로 저장되어야 합니다.
+
+**SQL**
+
+```sql
+-- 기존 프로시저가 있다면 삭제
+DROP PROCEDURE IF EXISTS GenerateTestUsers;
+
+-- 딜리미터를 변경하여 프로시저 본문 내의 세미콜론(;)이 쿼리 종료로 인식되지 않게 합니다.
+DELIMITER $$
+
+-- 테스트 회원 데이터를 생성하는 프로시저 정의
+CREATE PROCEDURE GenerateTestUsers()
+BEGIN
+    -- 루프 카운터 변수
+    DECLARE i INT DEFAULT 1;
+    -- 생성할 최종 데이터 수
+    DECLARE max_count INT DEFAULT 100;
+
+    -- 회원 아이디, 닉네임, 이메일 생성을 위한 변수
+    DECLARE v_id VARCHAR(50);
+    DECLARE v_nick_nm VARCHAR(50);
+    DECLARE v_email VARCHAR(100);
+    DECLARE v_tel VARCHAR(20);
+    DECLARE v_birth_date DATE;
+    DECLARE v_sex CHAR(1);
+    DECLARE v_name VARCHAR(50);
+
+    -- 루프 시작
+    WHILE i <= max_count DO
+        -- 1. 고유한 아이디, 닉네임, 이메일 생성
+        SET v_id = CONCAT('testuser', LPAD(i, 3, '0'));
+        SET v_nick_nm = CONCAT('테스트닉네임', i);
+        SET v_email = CONCAT('test', LPAD(i, 3, '0'), '@testdomain.com');
+        SET v_name = CONCAT('홍길동', i);
+
+        -- 2. 랜덤 전화번호 생성 (010-XXXX-XXXX 형식)
+        SET v_tel = CONCAT('010-',
+                           LPAD(FLOOR(RAND() * 9000) + 1000, 4, '0'),
+                           '-',
+                           LPAD(FLOOR(RAND() * 9000) + 1000, 4, '0'));
+
+        -- 3. 랜덤 생년월일 생성 (1980년 1월 1일 ~ 2005년 12월 31일 사이)
+        SET v_birth_date = DATE_ADD('1980-01-01', INTERVAL FLOOR(RAND() * 9500) DAY); -- 약 26년치 랜덤
+
+        -- 4. 랜덤 성별 생성
+        SET v_sex = IF(RAND() > 0.5, 'M', 'F');
+
+        -- 5. TBL_USERS 테이블에 데이터 삽입
+        INSERT INTO TBL_USERS (
+            USER_ID,
+            USER_PW, -- 간단한 테스트 비밀번호 (실제 운영 환경에서는 반드시 해싱하세요)
+            USER_NICK_NM,
+            USER_EMAIL,
+            USER_LV,
+            USER_ST,
+            USER_NM,
+            USER_TEL,
+            USER_BIRTH_DT,
+            USER_SEX_GB,
+            USER_JUSO,
+            USER_JUSO_D
+        ) VALUES (
+            v_id,
+            SHA2('1234', 256), -- '1234'를 SHA-256으로 해싱하여 저장
+            v_nick_nm,
+            v_email,
+            FLOOR(RAND() * 4) + 1, -- 1에서 4 사이의 레벨
+            'ACTIVE',
+            v_name,
+            v_tel,
+            v_birth_date,
+            v_sex,
+            CONCAT('테스트시 테스트구 테스트동', i),
+            CONCAT('테스트아파트 ', LPAD(i, 3, '0'), '호')
+        );
+
+        -- 카운터 증가
+        SET i = i + 1;
+    END WHILE;
+
+END$$
+
+-- 딜리미터를 원래대로 복구
+DELIMITER ;
+
+CALL GenerateTestUsers();
+SELECT * FROM TBL_USERS;
+```
+
+---
+
+![image.png](attachment:30796811-477a-4b50-8b01-437ea302a3a0:image.png)
+
+---
+
+### 🔷 **PCJ-003 — 사용자 상태 순환 트리거 검증**
+
+**🎯 테스트 목적 (Objective)**
+
+`TBL_USERS`테이블의 레코드가 `UPDATE` 될 때, `trg_cycle_user_st_before_update`  트리거가 올바르게 작동하여 `OLD` 상태에 따라 `NEW USER_ST`를 정해진 순서로 순환 변경하고, `USER_MOD_DTTM` 필드를 자동으로 최신화하는지 확인한다.
+****🤏🏻 **사전 조건 (Preconditions)**
+1. `TBL_USERS` 테이블에 테스트용 레코드($USER\_CD = 1$)가 존재해야 합니다.
+2. 테스트 시작 시, 해당 레코드의 $USER\_ST$는 **`ACTIVE`** 상태여야 합니다.
+3. `trg_cycle_user_st_before_update` 트리거가 `DB`에 **정의** 및 **활성화**되어 있어야 합니다.
+
+**🚀 실행 단계 (Test Steps)**
+
+1. 테스트 대상 `USER_CD = 1`의 초기 상태 `USER_ST`, `USER_MOD_DTTM`를 조회합니다.
+2. `USER_ST` 필드가 아닌 임의의 필드 `USER_NICK_NM`를 수정하는 `UPDATE` 쿼리를 실행하여 트리거를 발동시킵니다.
+3. 테스트 대상 `USER_CD = 1`의 최종 상태를 다시 조회하여 `USER_ST`와 `USER_MOD_DTTM`의 변경을 확인합니다.
+
+**SQL**
+
+```sql
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS trg_cycle_user_st_before_update;
+CREATE TRIGGER trg_cycle_user_st_before_update
+BEFORE UPDATE
+ON TBL_USERS FOR EACH ROW
+BEGIN
+    -- 현재(OLD) 상태값을 기준으로 다음(NEW) 상태값을 결정합니다.
+    CASE OLD.USER_ST
+        WHEN 'ACTIVE' THEN
+            SET NEW.USER_ST = 'DORMANT';
+        WHEN 'DORMANT' THEN
+            SET NEW.USER_ST = 'BANNED';
+        WHEN 'BANNED' THEN
+            SET NEW.USER_ST = 'DELETED';
+        WHEN 'DELETED' THEN
+            SET NEW.USER_ST = 'ACTIVE';
+        -- 정의된 상태가 아닌 경우 (예외 처리)
+        ELSE
+            SET NEW.USER_ST = 'ACTIVE';
+    END CASE;
+
+    -- 마지막 정보 수정일시도 함께 업데이트 (기존 DDL에 정의된 DEFAULT NOW() 대신 명시적으로)
+    SET NEW.USER_MOD_DTTM = NOW();
+END$$
+
+DELIMITER ;
+
+SELECT USER_CD, USER_ST, USER_NICK_NM, USER_MOD_DTTM FROM TBL_USERS WHERE USER_CD = 1;
+-- 예상 결과: 1, ACTIVE, '닉네임', '2025-11-18 10:00:00'
+
+UPDATE TBL_USERS
+SET USER_NICK_NM = 'ActiveToDormant' -- 상태 변경을 위한 임의의 업데이트
+WHERE USER_CD = 1;
+
+SELECT USER_CD, USER_ST, USER_NICK_NM, USER_MOD_DTTM FROM TBL_USERS WHERE USER_CD = 1;
+-- 예상 결과: 1, DORMANT, 'ActiveToDormant', '2025-11-18 10:51:00' (현재 시간)
+```
+
+✅ **기대 결과 (Expected Result**
+
+- 1. **`USER_ST`** 필드 **:** 초기 상태 `ACTIVE`에서 트리거에 의해 `DORMANT`로 변경되어야 합니다.
+- 2. **`USER_NICK_NM`** 필드 **:** `UPDATE` 쿼리에 따라 `ActiveToDormant`로 변경되어야 합니다.
+- 3. **`USER_MOD_DTTM`** 필드 **:** `UPDATE` 실행 시각으로 자동 업데이트되어야 합니다. (초기 값보다 최신 시각)
+
+---
+
+![image.png](attachment:474524ea-922c-4b07-9ae2-106f63326b87:image.png)
+
+---
+
+</aside>
+
+# **📑 [TC-PHY]** 실물 상품 즉시 구매 프로세스
+
+---
+
+<aside>
+
+**🎯 테스트 목적 (Objective)**
+
+회원이 장바구니를 거치지 않고 **실물 상품을 즉시 구매**할 때,
+
+주문 생성, 주문 상세, 재고 차감, 배송 코드 생성, 배송 정보 저장, 주문 이력까지
+
+전체 흐름이 정상 처리되는지 검증한다.
+
+## **테스트 케이스 상세**
+
+---
+
+### 🔷 **TC-PHY-001 — 주문 생성**
+
+**목적**
+
+즉시 구매 시 주문 테이블에 실물 상품 주문이 정상 생성되는지 확인한다.
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDERS (
+    USER_CD, PRODUCT_TYPE_CD, ORDER_TOTAL_PRICE_AMT
+)
+VALUES (
+    1001, 1, 25000
+);
+```
+
+**기대 결과**
+
+- TBL_ORDERS에 `ORDER_CD = 5001` 생성됨
+- PRODUCT_TYPE_CD = 1 (실물)
+
+---
+
+### 🔷 **TC-PHY-002 — 주문 상세 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDER_DETAILS (ORDER_CD, VARIANT_CD, ORD_DETL_QTY_CNT, ORD_DETL_PRICE_AMT)
+VALUES (5001, 201, 1, 25000);
+```
+
+**기대 결과**
+
+- 주문 상세 정보 1건 입력됨
+- VARIANT_CD = 201 (SIZE=L)
+
+---
+
+### 🔷 **TC-PHY-003 — 재고 차감 확인**
+
+**Trigger 동작 검증**
+
+**SQL**
+
+```sql
+SELECT VARIANT_NM, VARIANT_STOCK_CNT FROM TBL_PRODUCT_VARIANTS;
+```
+
+**기대결과**
+
+- SIZE=L 재고 수량이 **기존 대비 1 감소됨**
+
+---
+
+![TS_PHY_001-3_실물상품구매_Trigger로_인한_재고_감소_확인.gif](attachment:4c79944e-4313-448c-b975-ad86990de6d7:TS_PHY_001-3_실물상품구매_Trigger로_인한_재고_감소_확인.gif)
+
+### 🔷 **TC-PHY-004 — 배송 코드 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_DELIVERY_PHY (ST_PHY_CD, SHIPPING_CO_NM, TRACKING_NO)
+VALUES (1, NULL, NULL);
+```
+
+**기대 결과**
+
+- TBL_DELIVERY_PHY에 배송 코드 7001 생성
+- ST_PHY_CD = 1 (결제 완료 상태)
+
+---
+
+### 🔷 **TC-PHY-005 — 배송 정보 저장**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDER_PHY (
+    ORDER_CD, DELIVERY_PHY_CD, RECIPIENT_NM, RECIPIENT_TEL_NO,
+    SHIPPING_UPYEON, SHIPPING_JUSO, SHIPPING_JUSO_D
+)
+VALUES (
+    5001, 7001, '최테스터', '010-1234-5678',
+    '6236', '서울특별시 강남구 테헤란로 123', '7층'
+);
+```
+
+**기대 결과**
+
+- 배송지 정보 정상 입력됨
+
+---
+
+### 🔷 **TC-PHY-006 — 주문 상태 이력 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDER_HISTORY (ORDER_CD, ORD_HIST_ST, ORD_HIST_REASON)
+VALUES (5001, '결제완료', '바로구매 테스트');
+```
+
+**기대 결과**
+
+- TBL_ORDER_HISTORY에 결제 완료 이력 정상 반영됨
+
+---
+
+## **전체 프로세스 결과 요약**
+
+| 단계 | 설명 | 결과 |
+| --- | --- | --- |
+| 1 | 주문 생성 | 정상 |
+| 2 | 주문 상세 생성 | 정상 |
+| 3 | 재고 자동 차감 | 정상 |
+| 4 | 배송 코드 생성 | 정상 |
+| 5 | 배송 정보 저장 | 정상 |
+| 6 | 주문 이력 생성 | 정상 |
+</aside>
+
+# **📑 [TC-GFC] 기프티콘 즉시 구매 프로세스**
+
+<aside>
+
+## **테스트 케이스 상세**
+
+---
+
+### 🔷 **TC-GFC-001 — 주문 생성**
+
+**목적**
+
+즉시 구매 시 주문이 정상 생성되는지 확인한다.
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDERS (ORDER_CD, USER_CD, PRODUCT_TYPE_CD, ORDER_TOTAL_PRICE_AMT)
+VALUES (5002, 1001, 2, 3000);
+```
+
+**기대 결과**
+
+- TBL_ORDERS에 `ORDER_CD=5002` 생성됨
+- PRODUCT_TYPE_CD = 2 (기프티콘)
+
+---
+
+### 🔷 **TC-GFC-002 — 주문 상세 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDER_DETAILS (ORDER_CD, VARIANT_CD, ORD_DETL_QTY_CNT, ORD_DETL_PRICE_AMT)
+VALUES (5002, 203, 1, 3000);
+```
+
+**기대 결과**
+
+- 주문 상세 1건 정상 생성됨
+
+---
+
+### 🔷 **TC-GFC-003 — 재고 차감 검증**
+
+**SQL**
+
+```sql
+SELECT VARIANT_NM, VARIANT_STOCK_CNT FROM TBL_PRODUCT_VARIANTS;
+```
+
+**기대 결과**
+
+- 기프티콘은 실물 재고가 아니므로 **재고 차감 없음**
+    
+    ![TS_GCF_001-3_기프티콘상품구매_재고_미감소_확인.gif](attachment:0f39fd37-d78f-4874-9378-497104ce993b:TS_GCF_001-3_기프티콘상품구매_재고_미감소_확인.gif)
+    
+
+---
+
+### 🔷 **TC-GFC-004 — 기프티콘 발송 코드 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_GFC_SEND (GFC_SEND_CD, GFC_SEND_ST_CD, GFC_SEND_TYPE_CD)
+VALUES (8001, 1, 1);
+```
+
+**기대 결과**
+
+- GFC_SEND 테이블에 발송 코드 8001 생성됨
+
+---
+
+### 🔷 **TC-GFC-005 — 기프티콘 주문 정보 저장**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_GFC_ORDER (ORDER_CD, GFC_SEND_CD, RECIPT_TEL)
+VALUES (5002, 8001, '010-9876-5432');
+```
+
+**기대 결과**
+
+- ORDER_CD 5002와 발송 코드 8001이 정상 매핑됨
+
+---
+
+### 🔷 **TC-GFC-006 — 주문 이력 생성**
+
+**SQL**
+
+```sql
+INSERT INTO TBL_ORDER_HISTORY (ORD_HIST_CD, ORDER_CD, ORD_HIST_ST, ORD_HIST_REASON)
+VALUES (9002, 5002, '결제완료', '바로구매 기프티콘 테스트');
+```
+
+**기대 결과**
+
+- 주문 이력에 ‘결제 완료’ 상태 정상 기록됨
+
+---
+
+## **전체 테스트 결과 요약**
+
+| 단계 | 설명 | 결과 |
+| --- | --- | --- |
+| 1 | 주문 생성 | 정상 |
+| 2 | 주문 상세 생성 | 정상 |
+| 3 | 재고 차감 검증 | 정상 |
+| 4 | 발송 코드 생성 | 정상 |
+| 5 | 기프티콘 주문 정보 저장 | 정상 |
+| 6 | 주문 상태 이력 생성 | 정상 |
+</aside>
+
+# **📑 [TC-CART] 장바구니 비정상 처리 테스트**
+
+<aside>
+
+## **테스트 케이스 상세**
+
+---
+
+### 🔷 TC-CART-001 — 동일 제품 1개 추가
+
+---
+
+```sql
+CALL PROC_ADD_TO_CART_SAFE(1001, 201, 1);
+```
+
+**기대 결과:** 장바구니에 수량이 1개에서 2개로 변경 됨;
+
+![TC_CART_003_장바구니에_동일한 제품_수량_추가시 장바구니_수량_증가.gif](attachment:817767e4-3776-423b-a2ed-1c41aeb6175b:TC_CART_003_장바구니에_동일한_제품_수량_추가시_장바구니_수량_증가.gif)
+
+---
+
+**기대 결과:** 수량 1개 추가가 확인됨
+
+---
+
+### 🔷 TC-CART-002 — 구매 제한 초과 시 강제 조정
+
+```sql
+CALL PROC_UPDATE_CART_QTY_SAFE(1001, 201, 5);
+```
+
+**기대 결과:** 구매 제한 때문에 **1개로 강제 변경**
+
+---
+
+### 🔷 TC-CART-003 — 재고 및 구매 제한 확장 후 장바구가
+
+```sql
+UPDATE TBL_PRODUCT_VARIANTS
+SET VARIANT_STOCK_CNT = 999,
+    VARIANT_GUMAE_LIMIT = 999
+WHERE VARIANT_CD = 201;
+
+CALL PROC_UPDATE_CART_QTY_SAFE(1001, 201, 5);
+```
+
+**기대 결과:** 재고 및 제한 정상 확장 후 장바구니 수량 정상 업데이트 됨
+
+---
+
+![TC_CART_004-6_구매수량제한을_초과하여_장바구니에_추가한_경우.gif](attachment:4eb3d68d-8c65-430e-b27a-81ba6148fae2:TC_CART_004-6_구매수량제한을_초과하여_장바구니에_추가한_경우.gif)
+
+---
+
+### 🔷 TC-CART-004 — 수량 0 입력 시 장바구니 삭제
+
+```sql
+CALL PROC_UPDATE_CART_QTY_SAFE(1001, 201, 0);
+```
+
+**기대 결과:** 장바구니에서 품목 삭제
+
+![TC_CART_007_장바구니_수량을_0으로_만드는_경우.gif](attachment:c6484803-221e-452d-afa1-e53d0b8c0e21:TC_CART_007_장바구니_수량을_0으로_만드는_경우.gif)
+
+---
+
+### 🔷 TC-CART-005 — 재고를 0으로 변경(재고 부족 상황) 및 장바구니 업데이트
+
+```sql
+UPDATE TBL_PRODUCT_VARIANTS
+SET VARIANT_STOCK_CNT = 0
+WHERE VARIANT_CD = 201;
+
+CALL PROC_UPDATE_CART_QTY_SAFE(1001, 201, 1);
+```
+
+**기대 결과:** 장바구니 내용 삭제 정상 동작 확인
+
+---
+
+![TC_CART_009-11_장바구니에_있던_제품_재고가_0이_된_경우.gif](attachment:9b356ba8-362c-460d-a952-cb7d9a7c095f:TC_CART_009-11_장바구니에_있던_제품_재고가_0이_된_경우.gif)
+
+</aside>
+
+# **📑 [CSW]**  게시판 테스트 케이스
+
+<aside>
+
+---
+
+## **1. 목적**
+
+- 게시글 목록 조회 시, **공지사항(POST_CTGRY_CD = 4)에 해당하는 최신 게시글 2개**가 목록의 **최상단**에 고정되어 출력되며, 그 외 나머지 게시글은 별도의 정렬 기준(최신순)에 따라 올바르게 출력되는지 확인한다.
+
+---
+
+## **2. 시나리오 ID**
+
+**TS-CART-001 — 장바구니 비정상 처리 및 복구 시나리오**
+
+---
+
+## **3. 사전 조건**
+
+- **테이블 존재 :**  `TBL_POSTS`, `TBL_POST_CATEGORIES`, `TBL_USERS` 테이블이 모두 존재하고, 외래 키(FK)가 올바르게 설정되어 있어야 한다.
+- **데이터 상태 :** `POST_CTGRY_CD = 4`인 공지사항 게시글이 **최소 2개 이상** 존재해야 한다. `POST_CTGRY_CD != 4`인 일반 게시글이 **최소 7개 이상** 존재해야 한다.
+- **카테고리명:** `TBL_POST_CATEGORIES`에 `POST_CTGRY_CD = 4`에 해당하는 카테고리명(`POST_CTGRY_NM`)이 존재해야 한다.
+- **사용자 정보:** 모든 게시글 및 댓글 작성자의 `USER_CD`가 `TBL_USERS`에 존재해야 한다.
+- 테스트를 위해 `POST_CTGRY_CD = 4`인 게시글 3개와 `POST_CTGRY_CD != 4`인 게시글 10개를 생성한다.
+- **공지사항 (POST_CTGRY_CD = 4)**: 서로 다른 작성일시를 가진 3개의 게시글을 준비한다.
+- **일반 게시글 (POST_CTGRY_CD != 4)**: 서로 다른 작성일시를 가진 10개의 게시글을 준비한다.
+- 아래의 통합 SQL 쿼리를 실행한다.
+- 조회된 결과 셋의 행 수와 정렬 순서를 확인한다.
+
+---
+
+## **SWC-001—테스트 케이스 상세**
+
+---
+
+### 🔷 SCW-001 —  **최신순 정렬 및 공지 고정 검증**
+
+---
+
+```sql
+(
+    -- 1. 공지사항 (Notice) 중 최신 2건을 가져옴
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD = 4
+    ORDER BY A.POST_REG_DTTM DESC
+    LIMIT 2
+)
+UNION ALL
+(
+    -- 2. 일반 게시글 (General) 중 최신 7건을 가져옴
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD != 4
+    ORDER BY A.POST_REG_DTTM DESC -- 최신순 정렬
+    LIMIT 7
+);
+
+```
+
+---
+
+![게시글_최신순.gif](attachment:dd2bf2e7-6e03-4385-9894-167644373a9d:게시글_최신순.gif)
+
+---
+
+✅ **기대 결과 (Expected Result)**
+
+1. **전체 행 수**: 총 **9개**의 행이 조회되어야 합니다 (공지 2개 + 일반 7개).
+2. **상단 고정 확인 (1, 2행)**: 목록의 1행과 2행은 `POST_CTGRY_CD = 4`인 공지사항 게시글이어야 하며, 공지사항 중 **가장 최신 2건**이 순서대로 출력되어야 합니다.
+3. **일반 목록 확인 (3-9행)**: 목록의 3행부터 9행까지 7개의 게시글은 일반 게시글이어야 하며, 일반 게시글 전체 중 `POST_REG_DTTM` 기준으로 **가장 최신 7개**가 출력되어야 합니다.
+4. **출력 컬럼**: `POST_CD`, `POST_CTGRY_NM`, `POST_TT`, `USER_NICK_NM`, `POST_REG_DTTM`, `POST_VIEW_CNT`, `NetLike` 컬럼이 모두 정상적으로 출력되어야 합니다.
+
+---
+
+### 🔷 SCW-002 — **조회순 정렬 및 공지 고정 검증**
+
+🎯 **테스트 목적 (Objective)**
+게시글 목록 조회 시, **공지사항(POST_CTGRY_CD = 4) 중 최신 2개**가 목록 최상단에 고정 출력되며, 나머지 일반 게시글은 **`POST\_VIEW\_CNT` (조회수) 기준 내림차순**으로 정렬되어 올바르게 출력되는지 확인한다.
+
+- 🤏🏻 **사전 조건 (Preconditions)**
+1. **테이블 존재**: `TBL_POSTS`, `TBL_POST_CATEGORIES`, `TBL_USERS` 테이블이 존재해야 합니다.
+2. **데이터 상태**: 공지사항(POST_CTGRY_CD = 4) 3개 이상, 일반 게시글 10개 이상이 존재해야 합니다.
+3. **데이터 분포**: 일반 게시글의 `POST\_VIEW\_CNT` 값이 서로 **달라야** 조회수 정렬 검증이 가능합니다.
+
+🚀 **실행 단계 (Test Steps)**
+
+1. 테스트를 위한 더미 데이터를 준비합니다. (일반 게시글의 조회수 분포를 명확히 다르게 설정)
+2. `UNION ALL`을 사용한 아래의 통합 $SQL$ 쿼리를 실행하여 결과를 조회합니다.
+3. 조회된 결과 셋의 행 수와 정렬 순서를 확인합니다.
+
+---
+
+## SCW-002—테스트 케이스 상세
+
+---
+
+```sql
+(
+    -- 1. 공지사항 (Notice) 중 최신 2건을 가져옴
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD = 4
+    ORDER BY A.POST_REG_DTTM DESC
+    LIMIT 2
+)
+UNION ALL
+(
+    -- 2. 일반 게시글 (General) 중 조회수순 7건을 가져옴
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD != 4
+    ORDER BY A.POST_VIEW_CNT DESC -- 조회수순 정렬
+    LIMIT 7
+);
+
+```
+
+---
+
+![게시글_조회순.gif](attachment:82446dde-bfd8-469c-a0da-319c58e36827:게시글_조회순.gif)
+
+---
+
+✅ **기대 결과 (Expected Result)**
+
+1. **전체 행 수**: 총 **9개**의 행이 조회되어야 합니다 (공지 2개 + 일반 7개).
+2. **상단 고정 확인 (1, 2행)**: 목록의 1행과 2행은 공지사항 중 **가장 최신 2건**이어야 합니다.
+3. **메인 정렬 확인 (3-9행)**: 목록의 3행부터 9행까지는 일반 게시글이어야 하며, 이 7개 행은 일반 게시글 전체 중 `POST_VIEW_CNT` 기준으로 **조회수가 가장 높은 7개**가 내림차순으로 출력되어야 합니다.
+4. **출력 컬럼**: 모든 지정 컬럼이 정상적으로 출력되어야 합니다.
+
+---
+
+### 🔷SCW-003 —추천**순 정렬 및 공지 고정 검증**
+
+---
+
+🎯 **테스트 목적 (Objective)**
+게시글 목록 조회 시, **공지사항(POST_CTGRY_CD = 4) 중 최신 2개**가 목록 최상단에 고정 출력되며, 나머지 일반 게시글은 **`NetLike` (순 추천수 =** $추천수 - 비추천수$**) 기준 내림차순**으로 정렬되어 올바르게 출력되는지 확인한다.
+
+- ***🤏🏻 **사전 조건 (Preconditions)**
+1. **테이블 존재**: `TBL_POSTS`, `TBL_POST_CATEGORIES`, `TBL_USERS` 테이블이 존재해야 합니다.
+2. **데이터 상태**: 공지사항(POST_CTGRY_CD = 4) 3개 이상, 일반 게시글 10개 이상이 존재해야 합니다.
+3. **데이터 분포**: 일반 게시글의 `NetLike` 값(순 추천수)이 서로 **달라야** 추천순 정렬 검증이 가능합니다.
+
+🚀 **실행 단계 (Test Steps)**
+
+1. 테스트를 위한 더미 데이터를 준비합니다. (일반 게시글의 `POST\_LIKE\_CNT`와 `POST\_DISLIKE\_CNT`를 조정하여 $NetLike$ 값을 명확히 다르게 설정)
+2. `UNION ALL`을 사용한 아래의 통합 $SQL$ 쿼리를 실행하여 결과를 조회합니다.
+3. 조회된 결과 셋의 행 수와 정렬 순서를 확인합니다.
+
+---
+
+## SCW-003—테스트 케이스 상세
+
+---
+
+```sql
+(
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD = 4
+    ORDER BY A.POST_REG_DTTM DESC
+    LIMIT 2
+)
+UNION ALL
+(
+    SELECT
+        A.POST_CD, B.POST_CTGRY_NM, A.POST_TT, U.USER_NICK_NM, A.POST_REG_DTTM, A.POST_VIEW_CNT, (A.POST_LIKE_CNT - A.POST_DISLIKE_CNT) AS `NetLike`
+    FROM TBL_POSTS A
+    INNER JOIN TBL_POST_CATEGORIES B ON A.POST_CTGRY_CD = B.POST_CTGRY_CD
+    INNER JOIN TBL_USERS U ON A.USER_CD = U.USER_CD
+    WHERE A.POST_CTGRY_CD != 4
+    ORDER BY A.POST_REG_DTTM DESC
+    LIMIT 7
+);
+```
+
+---
+
+![게시글_추천순.gif](attachment:f3a68757-5fc4-4ea0-89cc-8e2a69d8bb2a:게시글_추천순.gif)
+
+---
+
+✅ **기대 결과 (Expected Result)**
+
+1. **전체 행 수**: 총 **9개**의 행이 조회되어야 합니다 (공지 2개 + 일반 7개).
+2. **상단 고정 확인 (1, 2행)**: 목록의 1행과 2행은 공지사항 중 **가장 최신 2건**이어야 합니다.
+3. **메인 정렬 확인 (3-9행)**: 목록의 3행부터 9행까지는 일반 게시글이어야 하며, 이 7개 행은 일반 게시글 전체 중 `NetLike` 기준으로 **순 추천수가 가장 높은 7개**가 내림차순으로 출력되어야 합니다.
+4. **출력 컬럼**: 모든 지정 컬럼이 정상적으로 출력되어야 합니다.
+
+---
+
+### 🔷SCW-004 — **게시글 수정 권한 및 상세 조회 프로시저 검증**
+
+---
+
+### 🎯 테스트 목적 (Objective)
+
+1. **권한 검증:** `p_user_cd`가 게시글(`p_post_cd`)의 **실제 작성자**인 경우에만 게시글 내용이 수정되는지 확인한다.
+2. **원자성 확인:** 게시글 수정(UPDATE) 후, 수정된 내용이 포함된 상세 정보(SELECT)가 하나의 호출로 올바르게 반환되는지 확인한다.
+3. **수정일시 확인:** `POST_MOD_DTTM` 필드가 수정 성공 시 업데이트되는지, 실패 시 유지되는지 확인한다.
+
+---
+
+## SCW-004—테스트 케이스 상세
+
+---
+
+```sql
+/*
+1. 사용자 B가 사용자 A의 게시글 X를 수정 시도.
+2. 사용자 $\text{A}$가 본인이 작성한 게시글 $\text{X}$에 접근하여 수정 시도.
+*/
+-- TBL_POSTS 데이터 삽입 (userA가 게시글 X 생성)
+INSERT INTO TBL_POSTS (POST_CD, USER_CD, POST_CTGRY_CD, POST_TT, POST_CONT, POST_REG_DTTM) VALUES
+(2000, 100, 1, '사용자 A의 제목입니다.', '이 게시글은 사용자 A만 수정할 수 있습니다.', NOW());
+
+-- 시뮬레이션
+-- 사용자 B가 사용자 A의 게시글 X를 수정하려는 쿼리 (실제 구현에서는 실행되지 않아야 함)
+UPDATE TBL_POSTS
+SET POST_CONT = '사용자 B가 무단으로 수정을 시도한 내용입니다.',
+    POST_MOD_DTTM = NOW()
+WHERE POST_CD = 2000  -- 게시글 X
+  AND USER_CD = 200; -- 요청자 B의 ID (이 조건 때문에 업데이트는 0행에 영향을 줌)
+
+-- 변경 내용 확인
+SELECT
+    P.POST_CD,
+    U.USER_NICK_NM,
+    P.POST_TT,
+    P.POST_CONT,         -- 게시글 내용을 출력하기 위해 추가
+    P.POST_REG_DTTM,
+    P.POST_VIEW_CNT,
+    (P.POST_LIKE_CNT - P.POST_DISLIKE_CNT) AS `NetLike`
+FROM
+    TBL_POSTS P
+INNER JOIN
+    TBL_USERS U
+    ON P.USER_CD = U.USER_CD
+WHERE
+    P.POST_CD = 2000;
+
+/*
+사용자 $\text{A}$가 본인이 작성한 게시글 $\text{X}$에 접근하여 수정 시도.
+*/
+UPDATE TBL_POSTS
+SET POST_CONT = '사용자 A가 수정을 시도하여 변경된 내용입니다.',
+    POST_MOD_DTTM = NOW()
+WHERE POST_CD = 2000  -- 게시글 X
+  AND USER_CD = 100; -- 요청자 A의 ID
+
+-- 변경 내용 확인
+-- 1. 게시글 상세 정보 (1건)
+SELECT
+    P.POST_CD,
+    U.USER_NICK_NM,
+    P.POST_TT,
+    P.POST_CONT,         -- 게시글 내용을 출력하기 위해 추가
+    P.POST_REG_DTTM,
+    P.POST_VIEW_CNT,
+    (P.POST_LIKE_CNT - P.POST_DISLIKE_CNT) AS `NetLike`
+FROM
+    TBL_POSTS P
+INNER JOIN
+    TBL_USERS U
+    ON P.USER_CD = U.USER_CD
+WHERE
+    P.POST_CD = 2000;
+```
+
+![게시글_수정.gif](attachment:232ab1ea-5732-4e3d-9a84-654bc933d428:게시글_수정.gif)
+
+### ✅ 기대 결과 (Expected Result)
+
+1. **테스트 1 (USER_CD = 200):**
+    - **DB 상태:** `TBL_POSTS`에서 `POST_CD = 500`의 `POST_CONT` 필드는 **변경되지 않고** 초기 값을 유지해야 한다.
+    - **결과 셋:** 반환된 게시글 상세 정보의 `POST_CONT`는 여전히 **초기 내용**이어야 하며, `POST_MOD_DTTM`은 `T_initial`과 **동일**해야 한다.
+    - **프로시저 반환:** 게시글 상세 정보가 반환된다.
+2. **테스트 2 (USER_CD = 100):**
+    - **DB 상태:** `TBL_POSTS`에서 `POST_CD = 500`의 `POST_CONT` 필드가 `'사용자 A가 프로시저를 통해 수정을 시도하여 변경된 내용입니다.'`로 **업데이트**되어야 한다.
+    - **결과 셋:** 반환된 게시글 상세 정보의 `POST_CONT`는 **새로운 내용**이어야 하며, `POST_MOD_DTTM`은 `T_initial`보다 **이후 시간**으로 업데이트되어야 한다.
+    - **프로시저 반환:** 수정된 게시글 상세 정보가 반환된다.
+3. **최종 상태 확인:** `POST_CD = 500`의 `POST_CONT`는 사용자 A가 수정한 최종 내용이며, `POST_MOD_DTTM`은 테스트 2가 완료된 시점의 시간이어야 한다.
+
+---
+
+---
+
+</aside>
 
 ---
 
